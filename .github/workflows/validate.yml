@@ -20,6 +20,9 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # brands is for the HACS default store (a PR to home-assistant/brands);
+          # this is installed as a custom repository
+          ignore: brands
 
   tests:
     runs-on: ubuntu-latest
