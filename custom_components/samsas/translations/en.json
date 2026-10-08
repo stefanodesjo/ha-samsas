@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Samsas",
+        "description": "The token is in the app under Vi → Inställningar → Home Assistant.",
+        "data": {
+          "url": "Address",
+          "token": "Token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "New token",
+        "description": "The token was changed in the app. Paste the new one.",
+        "data": {
+          "token": "Token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach Samsas",
+      "invalid_auth": "Samsas did not accept the token"
+    },
+    "abort": {
+      "already_configured": "This household is already set up",
+      "reauth_successful": "The token was updated",
+      "unique_id_mismatch": "That token belongs to another household"
+    }
+  },
+  "entity": {
+    "calendar": {
+      "week": { "name": "Week" }
+    },
+    "sensor": {
+      "dinner": { "name": "Dinner tonight" },
+      "next_pickup": { "name": "Next pickup" },
+      "next_waste": { "name": "Next waste collection" },
+      "next_post": { "name": "Next mail day" }
+    },
+    "todo": {
+      "shopping": { "name": "Shopping list" },
+      "longterm": { "name": "Long-term" },
+      "weekly": { "name": "Every week" }
+    }
+  }
+}
