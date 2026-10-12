@@ -69,14 +69,13 @@ response_variable: saved      # {title, kind: recipe | other, where: Kokboken | 
 
 ## Logo
 
-The icon and logo are in `brands/custom_integrations/samsas/`, in the layout of
-[home-assistant/brands](https://github.com/home-assistant/brands); Home
-Assistant shows them once they are merged there. They are drawn by
-`native/store/ha_brand.py` in the samsas repo, from the same code as the app
-icon.
-
-Everything refreshes once a minute. Entity ids come from the English names;
-the UI shows Swedish when Home Assistant runs in Swedish.
+The icon and logo ship with the integration in `custom_components/samsas/brand/`,
+which Home Assistant 2026.3 and later shows on its own (after a restart; a
+browser that cached the placeholder may need a reload). For older releases the
+same files are in `brands/custom_integrations/samsas/`, in the layout of
+[home-assistant/brands](https://github.com/home-assistant/brands). They are
+drawn by `native/store/ha_brand.py` in the samsas repo, from the same code as
+the app icon.
 
 ## Development
 
