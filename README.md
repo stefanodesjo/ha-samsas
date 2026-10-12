@@ -1,9 +1,12 @@
+![Samsas](https://raw.githubusercontent.com/stefanodesjo/ha-samsas/main/images/header.png)
+
 # Samsas for Home Assistant
 
-Puts the family's week, tonight's dinner and the lists from
-[Samsas](https://samsas.app) into Home Assistant, so a hallway dashboard shows
-who collects the kids and "lägg till mjölk på inköpslistan" from a speaker
-lands in the app.
+Puts the family's week, tonight's dinner, the lists, the children's chores and
+what you are counting down to from [Samsas](https://samsas.app) into Home
+Assistant, so a hallway dashboard shows who collects the kids, a tablet in a
+child's room ticks their chores, and "lägg till mjölk på inköpslistan" from a
+speaker lands in the app.
 
 ## Install
 
@@ -16,11 +19,14 @@ and restart.
 
 Then **Settings → Devices & services → Add integration → Samsas**. It asks for
 the app's address (`https://samsas.app`) and a token. The token is in the app
-under **Vi → Inställningar → Home Assistant**, where it can also be rotated;
-a rotated token makes Home Assistant ask for the new one.
+under **Hem → Hemmet → Home Assistant**, where it can also be rotated; a
+rotated token makes Home Assistant ask for the new one.
 
-What the token reaches is narrow on purpose: the week, the dinner and the
-lists. Nothing about how anyone feels, the jar, the cycle log or the money.
+What the token reaches is narrow on purpose: the week, the dinner, the lists,
+the children's chores and points, where a child with two homes is, the days
+you count down to and the name day. Nothing about how anyone feels, the jar,
+the cycle log, the money or the comments. The wishlists stay out too: a
+hallway screen would tell a child who bought what.
 
 ## Entities
 
@@ -28,13 +34,46 @@ One device, *Samsas*, with:
 
 | Entity | |
 |---|---|
-| `calendar.samsas_week` (Veckan) | The week's events, summaries like the app's calendar feed (`🚗 Hämtning – Bo`, `– ingen än` when nobody has taken it), plus waste and post days as whole-day entries. |
+| `calendar.samsas_week` (Veckan) | The week's events, summaries like the app's calendar feed (`🚗 Hämtning – Bo`, `⛷️ Fjällen – Alva och Bo`, `– ingen än` when nobody has taken it), with end times and multi-day spans, and a shared child's events from the other home. Waste and post days, birthdays, anniversaries, holidays and theme days as whole-day entries. |
 | `todo.samsas_shopping_list` (Inköp) | Read-write. `todo.add_item` adds, ticking completes, `todo.remove_item` deletes. Assist's "add … to the shopping list" works on it. |
 | `todo.samsas_long_term` (Långsiktigt) | Same, with due dates. |
-| `todo.samsas_every_week` (Varje vecka) | Same; completed means done this week. |
+| `todo.samsas_every_week` (Varje vecka) | The adults' weekly list; completed means done this week. |
+| `todo.samsas_<child>_s_chores` (Ellas sysslor) | One per child: this week's chores. Ticking earns the chore's points, as in the app; adding chores and setting points stay in the app. |
 | `sensor.samsas_dinner_tonight` (Middag ikväll) | Tonight's dish; the whole week's menu as an attribute. |
 | `sensor.samsas_next_pickup` (Nästa hämtning) | The next *hämtning*/*lämning* that has not started: title, with day, time, who and which child as attributes. |
 | `sensor.samsas_next_waste_collection`, `sensor.samsas_next_mail_day` | Dates from the household's address notices, when the address is set up in the app. |
+| `sensor.samsas_next_countdown` (Snart) | Days to the nearest anniversary, birthday or event marked *räkna ner*; its title and date, and the next ones, as attributes. |
+| `sensor.samsas_name_day` (Namnsdag) | Today's name days; the holiday, flag day, red day and theme day (*kanelbullens dag*) as attributes. |
+| `sensor.samsas_swap_requests` (Bytesförfrågningar) | How many *kan du ta?* requests wait for an answer, and which. The answer is a person's, in the app. |
+| `sensor.samsas_left_on_the_weekly_list` (Kvar på veckolistan) | What is left on the adults' weekly list. Zero is worth a light show. |
+| `sensor.samsas_<child>_is` (Ella är) | For a child with shared custody: `here` or `away` (*Hos oss* / *I andra hemmet*), with the other home and the day of the move. |
+| `sensor.samsas_<child>_s_points` (Ellas poäng) | Points since the last reward; this week's points and chores as attributes. |
+
+A child added in the app shows up on its own; a child shared from another home
+gets the calendar and *är*, not points or chores, which live in that home.
+
+## Service
+
+`samsas.import_recipe` reads a recipe from a link (or a text) and puts it in
+the cookbook, like *Dela till Samsas* in the app. It is part of Samsas Plus.
+`member` names the adult whose star it gets (the household's first adult
+otherwise). It answers with what was saved:
+
+```yaml
+action: samsas.import_recipe
+data:
+  url: https://www.ica.se/recept/kanelbullar-712345/
+  member: Alva
+response_variable: saved      # {title, kind: recipe | other, where: Kokboken | Långsiktigt}
+```
+
+## Logo
+
+The icon and logo are in `brands/custom_integrations/samsas/`, in the layout of
+[home-assistant/brands](https://github.com/home-assistant/brands); Home
+Assistant shows them once they are merged there. They are drawn by
+`native/store/ha_brand.py` in the samsas repo, from the same code as the app
+icon.
 
 Everything refreshes once a minute. Entity ids come from the English names;
 the UI shows Swedish when Home Assistant runs in Swedish.
@@ -55,4 +94,5 @@ python3.13 -m venv .venv && .venv/bin/pip install pytest-homeassistant-custom-co
 ```
 
 `tests/test_samsas.py` fakes `/hass/v1` and checks the config flow, each
-entity, the writes to the lists and the reauth after a rotated token.
+entity, the per-child entities, the writes to the lists, the import service
+and the reauth after a rotated token.

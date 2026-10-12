@@ -14,7 +14,13 @@ DEFAULT_URL = "https://samsas.app"
 UPDATE_INTERVAL = timedelta(seconds=60)
 
 # Same glyphs as the app's calendar feed, so a dashboard reads like the subscription does.
-KIND_EMOJI = {"lamna": "🎒", "hamta": "🚗", "aktivitet": "⚽", "egentid": "🌿", "ovrigt": "📌"}
+KIND_EMOJI = {"lamna": "🎒", "hamta": "🚗", "aktivitet": "⚽", "egentid": "🌿", "ovrigt": "📌", "semester": "🏖️"}
 PICKUP_KINDS = ("hamta", "lamna")
-# An event has a start only; half an hour is about a pickup.
+# An event with a start and no end: half an hour is about a pickup.
 TIMED_MINUTES = 30
+
+SERVICE_IMPORT_RECIPE = "import_recipe"
+ATTR_URL = "url"
+ATTR_TEXT = "text"
+ATTR_MEMBER = "member"
+ATTR_CONFIG_ENTRY = "config_entry_id"

@@ -29,18 +29,95 @@
   },
   "entity": {
     "calendar": {
-      "week": { "name": "Week" }
+      "week": {
+        "name": "Week"
+      }
     },
     "sensor": {
-      "dinner": { "name": "Dinner tonight" },
-      "next_pickup": { "name": "Next pickup" },
-      "next_waste": { "name": "Next waste collection" },
-      "next_post": { "name": "Next mail day" }
+      "dinner": {
+        "name": "Dinner tonight"
+      },
+      "next_pickup": {
+        "name": "Next pickup"
+      },
+      "next_waste": {
+        "name": "Next waste collection"
+      },
+      "next_post": {
+        "name": "Next mail day"
+      },
+      "countdown": {
+        "name": "Next countdown"
+      },
+      "name_day": {
+        "name": "Name day"
+      },
+      "swaps": {
+        "name": "Swap requests"
+      },
+      "weekly_left": {
+        "name": "Left on the weekly list"
+      },
+      "kid_custody": {
+        "name": "{kid} is",
+        "state": {
+          "here": "With us",
+          "away": "In the other home"
+        }
+      },
+      "kid_points": {
+        "name": "{kid}'s points",
+        "unit_of_measurement": "points"
+      }
     },
     "todo": {
-      "shopping": { "name": "Shopping list" },
-      "longterm": { "name": "Long-term" },
-      "weekly": { "name": "Every week" }
+      "shopping": {
+        "name": "Shopping list"
+      },
+      "longterm": {
+        "name": "Long-term"
+      },
+      "weekly": {
+        "name": "Every week"
+      },
+      "kid_chores": {
+        "name": "{kid}'s chores"
+      }
+    }
+  },
+  "services": {
+    "import_recipe": {
+      "name": "Import a recipe",
+      "description": "Reads a recipe from a link or a text and puts it in the cookbook, like Share to Samsas in the app. Part of Samsas Plus.",
+      "fields": {
+        "url": {
+          "name": "Link",
+          "description": "The page with the recipe."
+        },
+        "text": {
+          "name": "Text",
+          "description": "The recipe as text, instead of a link."
+        },
+        "member": {
+          "name": "Adult",
+          "description": "Whose star the recipe gets in the cookbook. Without a name: the household's first adult."
+        },
+        "config_entry_id": {
+          "name": "Household",
+          "description": "Only needed when more than one household is set up."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "needs_plus": {
+      "message": "Importing recipes is part of Samsas Plus."
+    },
+    "unknown_member": {
+      "message": "No adult called {name} in the household."
+    },
+    "which_household": {
+      "message": "Name the household: several are set up, or none is loaded."
     }
   }
 }

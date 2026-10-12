@@ -1,0 +1,19 @@
+import_recipe:
+  fields:
+    url:
+      example: "https://www.ica.se/recept/kanelbullar-712345/"
+      selector:
+        text:
+          type: url
+    text:
+      selector:
+        text:
+          multiline: true
+    member:
+      example: "Alva"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: samsas

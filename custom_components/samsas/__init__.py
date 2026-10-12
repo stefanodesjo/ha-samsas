@@ -2,15 +2,67 @@
 
 from __future__ import annotations
 
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
-from .api import SamsasApi
-from .const import CONF_TOKEN, CONF_URL
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
+
+from .api import SamsasApi, SamsasError
+from .const import (ATTR_CONFIG_ENTRY, ATTR_MEMBER, ATTR_TEXT, ATTR_URL, CONF_TOKEN, CONF_URL, DOMAIN,
+                    SERVICE_IMPORT_RECIPE)
 from .coordinator import SamsasConfigEntry, SamsasCoordinator
 
 PLATFORMS = [Platform.CALENDAR, Platform.SENSOR, Platform.TODO]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+IMPORT_SCHEMA = vol.All(
+    vol.Schema({
+        vol.Optional(ATTR_URL): cv.string,
+        vol.Optional(ATTR_TEXT): cv.string,
+        vol.Optional(ATTR_MEMBER): cv.string,
+        vol.Optional(ATTR_CONFIG_ENTRY): cv.string,
+    }),
+    cv.has_at_least_one_key(ATTR_URL, ATTR_TEXT),
+)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """The services: one, for now. Registered once, whatever the number of households."""
+
+    async def import_recipe(call: ServiceCall) -> ServiceResponse:
+        coordinator = _coordinator(hass, call.data.get(ATTR_CONFIG_ENTRY))
+        member = None
+        if name := call.data.get(ATTR_MEMBER):
+            member = coordinator.member_id(name)
+            if member is None:
+                raise ServiceValidationError(translation_domain=DOMAIN, translation_key="unknown_member",
+                                             translation_placeholders={"name": name})
+        try:
+            saved = await coordinator.api.import_recipe(call.data.get(ATTR_URL), call.data.get(ATTR_TEXT), member)
+        except SamsasError as err:
+            if err.status == 402:
+                raise ServiceValidationError(translation_domain=DOMAIN, translation_key="needs_plus") from err
+            raise HomeAssistantError(str(err)) from err
+        return {"title": saved["title"], "kind": saved["kind"], "where": saved["where"]}
+
+    hass.services.async_register(DOMAIN, SERVICE_IMPORT_RECIPE, import_recipe, schema=IMPORT_SCHEMA,
+                                 supports_response=SupportsResponse.OPTIONAL)
+    return True
+
+
+def _coordinator(hass: HomeAssistant, entry_id: str | None) -> SamsasCoordinator:
+    """The household the call is about: the one named, or the only one set up."""
+    entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
+    if entry_id:
+        entries = [e for e in entries if e.entry_id == entry_id]
+    if len(entries) != 1:
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="which_household")
+    return entries[0].runtime_data
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SamsasConfigEntry) -> bool:

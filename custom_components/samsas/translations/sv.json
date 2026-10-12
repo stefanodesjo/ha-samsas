@@ -29,18 +29,95 @@
   },
   "entity": {
     "calendar": {
-      "week": { "name": "Veckan" }
+      "week": {
+        "name": "Veckan"
+      }
     },
     "sensor": {
-      "dinner": { "name": "Middag ikväll" },
-      "next_pickup": { "name": "Nästa hämtning" },
-      "next_waste": { "name": "Nästa sophämtning" },
-      "next_post": { "name": "Nästa postdag" }
+      "dinner": {
+        "name": "Middag ikväll"
+      },
+      "next_pickup": {
+        "name": "Nästa hämtning"
+      },
+      "next_waste": {
+        "name": "Nästa sophämtning"
+      },
+      "next_post": {
+        "name": "Nästa postdag"
+      },
+      "countdown": {
+        "name": "Snart"
+      },
+      "name_day": {
+        "name": "Namnsdag"
+      },
+      "swaps": {
+        "name": "Bytesförfrågningar"
+      },
+      "weekly_left": {
+        "name": "Kvar på veckolistan"
+      },
+      "kid_custody": {
+        "name": "{kid} är",
+        "state": {
+          "here": "Hos oss",
+          "away": "I andra hemmet"
+        }
+      },
+      "kid_points": {
+        "name": "{kid}s poäng",
+        "unit_of_measurement": "poäng"
+      }
     },
     "todo": {
-      "shopping": { "name": "Inköp" },
-      "longterm": { "name": "Långsiktigt" },
-      "weekly": { "name": "Varje vecka" }
+      "shopping": {
+        "name": "Inköp"
+      },
+      "longterm": {
+        "name": "Långsiktigt"
+      },
+      "weekly": {
+        "name": "Varje vecka"
+      },
+      "kid_chores": {
+        "name": "{kid}s sysslor"
+      }
+    }
+  },
+  "services": {
+    "import_recipe": {
+      "name": "Importera recept",
+      "description": "Läser ett recept från en länk eller en text och lägger det i kokboken, som Dela till Samsas i appen. Ingår i Samsas Plus.",
+      "fields": {
+        "url": {
+          "name": "Länk",
+          "description": "Sidan med receptet."
+        },
+        "text": {
+          "name": "Text",
+          "description": "Receptet som text, i stället för en länk."
+        },
+        "member": {
+          "name": "Vuxen",
+          "description": "Vems stjärna receptet får i kokboken. Utan namn: hushållets första vuxna."
+        },
+        "config_entry_id": {
+          "name": "Hushåll",
+          "description": "Behövs bara när flera hushåll är kopplade."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "needs_plus": {
+      "message": "Att importera recept ingår i Samsas Plus."
+    },
+    "unknown_member": {
+      "message": "Hittar ingen vuxen som heter {name} i hushållet."
+    },
+    "which_household": {
+      "message": "Ange vilket hushåll: flera är kopplade, eller inget är laddat."
     }
   }
 }

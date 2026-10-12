@@ -11,6 +11,10 @@ import aiohttp
 class SamsasError(Exception):
     """Samsas could not be reached, or answered with an error."""
 
+    def __init__(self, message: str = "", status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+
 
 class SamsasAuthError(SamsasError):
     """The token is wrong, or has been rotated in the app."""
@@ -26,12 +30,17 @@ class SamsasApi:
         try:
             async with self._session.request(
                 method, f"{self.base}/hass/v1{path}", headers=self._headers,
-                timeout=aiohttp.ClientTimeout(total=15), **kwargs,
+                **({"timeout": aiohttp.ClientTimeout(total=15)} | kwargs),
             ) as resp:
                 if resp.status == 401:
                     raise SamsasAuthError("Samsas did not accept the token")
                 if resp.status >= 400:
-                    raise SamsasError(f"Samsas answered {resp.status} on {path}")
+                    # the server explains itself in Swedish ({"detail": ...}); pass that on
+                    try:
+                        detail = (await resp.json()).get("detail")
+                    except (aiohttp.ContentTypeError, ValueError):
+                        detail = None
+                    raise SamsasError(detail if isinstance(detail, str) else f"Samsas answered {resp.status} on {path}", resp.status)
                 return await resp.json()
         except (aiohttp.ClientError, TimeoutError) as err:
             raise SamsasError(f"Could not reach Samsas: {err}") from err
@@ -47,6 +56,11 @@ class SamsasApi:
 
     async def update_item(self, item_id: int, **fields: Any) -> dict:
         return await self._request("PATCH", f"/items/{item_id}", json=fields)
+
+    async def import_recipe(self, url: str | None, text: str | None, member: int | None) -> dict:
+        """A recipe into the cookbook (Samsas Plus), starred by `member`."""
+        return await self._request("POST", "/import", json={"url": url, "text": text, "member": member},
+                                   timeout=aiohttp.ClientTimeout(total=90))   # reading a page with the model takes a while
 
     async def delete_item(self, item_id: int) -> dict:
         return await self._request("DELETE", f"/items/{item_id}")

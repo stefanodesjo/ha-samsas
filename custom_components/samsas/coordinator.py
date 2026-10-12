@@ -39,3 +39,11 @@ class SamsasCoordinator(DataUpdateCoordinator[dict]):
 
     def kid_name(self, kid_id: int | None) -> str | None:
         return next((k["name"] for k in self.data["kids"] if k["id"] == kid_id), None)
+
+    def kid(self, kid_id: int) -> dict | None:
+        return next((k for k in self.data["kids"] if k["id"] == kid_id), None)
+
+    def member_id(self, name: str) -> int | None:
+        """An adult by name, as a person would say it: case and spaces do not matter."""
+        wanted = name.strip().casefold()
+        return next((m["id"] for m in self.data["members"] if m["name"].casefold() == wanted), None)

@@ -1,0 +1,5 @@
+{
+  "services": {
+    "import_recipe": { "service": "mdi:book-plus-outline" }
+  }
+}
