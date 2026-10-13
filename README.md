@@ -34,9 +34,10 @@ One device, *Samsas*, with:
 
 | Entity | |
 |---|---|
-| `calendar.samsas_week` (Veckan) | The week's events, summaries like the app's calendar feed (`🚗 Hämtning – Bo`, `⛷️ Fjällen – Alva och Bo`, `– ingen än` when nobody has taken it), with end times and multi-day spans, and a shared child's events from the other home. Waste and post days, birthdays, anniversaries, holidays and theme days as whole-day entries. |
-| `todo.samsas_shopping_list` (Inköp) | Read-write. `todo.add_item` adds, ticking completes, `todo.remove_item` deletes. Assist's "add … to the shopping list" works on it. |
-| `todo.samsas_long_term` (Långsiktigt) | Same, with due dates. |
+| `calendar.samsas_week` (Veckan) | The week's events, summaries like the app's calendar feed (`🚗 Hämtning – Bo`, `⛷️ Fjällen – Alva och Bo`, `– ingen än` when nobody has taken it), with end times and multi-day spans, and a shared child's events from the other home. Like the feed, a child's events in the weeks the child is at the other home are left out, and the weeks the child is here show as one entry (`👧 Ella hos oss`; `🏠 Ella och Noah hos oss` for children on the same schedule). Waste and post days, deadlines on Egna listor (`📋 Pass · Packlista`), birthdays, anniversaries, holidays and theme days as whole-day entries. |
+| `todo.samsas_shopping_list` (Inköp) | Read-write. `todo.add_item` adds, ticking completes, `todo.remove_item` deletes. Assist's "add … to the shopping list" works on it. A row from the week's menu has the dishes it is for as its description. |
+| `todo.samsas_to_do` (Att göra) | The first of Egna listor: the same, with due dates. Installs from before 0.3 keep the old id, `todo.samsas_long_term`. |
+| `todo.samsas_<list>` (Packlista, …) | One per list the household makes under Egna listor, named as in the app, with due dates. A new list shows up on its own; a deleted one goes unavailable. |
 | `todo.samsas_every_week` (Varje vecka) | The adults' weekly list; completed means done this week. |
 | `todo.samsas_<child>_s_chores` (Ellas sysslor) | One per child: this week's chores. Ticking earns the chore's points, as in the app; adding chores and setting points stay in the app. |
 | `sensor.samsas_dinner_tonight` (Middag ikväll) | Tonight's dish; the whole week's menu as an attribute. |
@@ -64,7 +65,7 @@ action: samsas.import_recipe
 data:
   url: https://www.ica.se/recept/kanelbullar-712345/
   member: Alva
-response_variable: saved      # {title, kind: recipe | other, where: Kokboken | Långsiktigt}
+response_variable: saved      # {title, kind: recipe | other, where: Kokboken | Att göra}
 ```
 
 ## Logo
@@ -93,5 +94,8 @@ python3.13 -m venv .venv && .venv/bin/pip install pytest-homeassistant-custom-co
 ```
 
 `tests/test_samsas.py` fakes `/hass/v1` and checks the config flow, each
-entity, the per-child entities, the writes to the lists, the import service
-and the reauth after a rotated token.
+entity, the per-child and per-list entities, the writes to the lists, the
+calendar, the import service and the reauth after a rotated token.
+
+0.3 needs a Samsas server with Egna listor in `/hass/v1`; against an older
+one the new lists, deadlines and *hos oss* weeks are simply absent.

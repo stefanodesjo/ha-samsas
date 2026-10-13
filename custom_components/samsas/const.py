@@ -15,6 +15,7 @@ UPDATE_INTERVAL = timedelta(seconds=60)
 
 # Same glyphs as the app's calendar feed, so a dashboard reads like the subscription does.
 KIND_EMOJI = {"lamna": "🎒", "hamta": "🚗", "aktivitet": "⚽", "egentid": "🌿", "ovrigt": "📌", "semester": "🏖️"}
+NOTICE_EMOJI = {"waste": "🗑️", "post": "✉️", "due": "📋"}     # an anniversary or a holiday carries its own
 PICKUP_KINDS = ("hamta", "lamna")
 # An event with a start and no end: half an hour is about a pickup.
 TIMED_MINUTES = 30

@@ -54,6 +54,10 @@ class SamsasApi:
     async def add_item(self, list_name: str, text: str, due: str | None = None) -> dict:
         return await self._request("POST", f"/lists/{list_name}", json={"text": text, "due": due})
 
+    async def add_custom_item(self, list_id: int, text: str, due: str | None = None) -> dict:
+        """A row on one of the household's own lists (Egna listor)."""
+        return await self._request("POST", f"/lists/custom/{list_id}", json={"text": text, "due": due})
+
     async def update_item(self, item_id: int, **fields: Any) -> dict:
         return await self._request("PATCH", f"/items/{item_id}", json=fields)
 

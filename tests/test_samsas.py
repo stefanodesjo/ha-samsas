@@ -51,9 +51,11 @@ def state_payload() -> dict:
                        {"id": 24, "text": "Duka av", "owner_id": None, "kid_id": 3, "done": True, "points": 3},
                        {"id": 25, "text": "Bädda sängen", "owner_id": None, "kid_id": 3, "done": False, "points": 5}],
             "longterm": [{"id": 21, "text": "Måla om hallen", "owner_id": None, "done": False, "due": "2026-12-01"}],
-            "shopping": [{"id": 22, "text": "Mjölk", "owner_id": None, "done": False, "due": None},
-                         {"id": 23, "text": "Smör", "owner_id": None, "done": True, "due": None}],
+            "shopping": [{"id": 22, "text": "Mjölk", "owner_id": None, "done": False, "due": None, "dishes": ["Tacos", "Pannkakor"]},
+                         {"id": 23, "text": "Smör", "owner_id": None, "done": True, "due": None, "dishes": []}],
         },
+        "custom_lists": [{"id": 5, "name": "Packlista", "emoji": "🧳",
+                          "items": [{"id": 30, "text": "Pass", "owner_id": None, "done": False, "due": (TODAY + timedelta(days=3)).isoformat()}]}],
         "notices": [{"day": (TODAY + timedelta(days=2)).isoformat(), "kind": "waste", "title": "Sophämtning: Restavfall"}],
     }
 
@@ -63,13 +65,14 @@ def api():
     with patch("custom_components.samsas.api.SamsasApi.state", new_callable=AsyncMock, return_value=state_payload()) as state, \
          patch("custom_components.samsas.api.SamsasApi.events", new_callable=AsyncMock) as events, \
          patch("custom_components.samsas.api.SamsasApi.add_item", new_callable=AsyncMock, return_value={"ok": True, "id": 99}) as add, \
+         patch("custom_components.samsas.api.SamsasApi.add_custom_item", new_callable=AsyncMock, return_value={"ok": True, "id": 98}) as add_custom, \
          patch("custom_components.samsas.api.SamsasApi.update_item", new_callable=AsyncMock, return_value={"ok": True}) as update, \
          patch("custom_components.samsas.api.SamsasApi.delete_item", new_callable=AsyncMock, return_value={"ok": True}) as delete, \
          patch("custom_components.samsas.api.SamsasApi.import_recipe", new_callable=AsyncMock,
                return_value={"kind": "recipe", "id": 5, "title": "Kanelbullar", "where": "Kokboken"}) as import_recipe:
         payload = state_payload()
         events.return_value = {"events": payload["events"], "notices": payload["notices"]}
-        yield {"state": state, "events": events, "add": add, "update": update, "delete": delete, "import": import_recipe}
+        yield {"state": state, "events": events, "add": add, "add_custom": add_custom, "update": update, "delete": delete, "import": import_recipe}
 
 
 async def setup_entry(hass: HomeAssistant) -> MockConfigEntry:
@@ -119,7 +122,7 @@ async def test_entities_show_the_house(hass: HomeAssistant, api, freezer):
 
     assert hass.states.get("todo.samsas_shopping_list").state == "1"    # Mjölk open, Smör ticked
     assert hass.states.get("todo.samsas_every_week").state == "1"
-    assert hass.states.get("todo.samsas_long_term").state == "1"
+    assert hass.states.get("todo.samsas_to_do").state == "1"
 
     calendar = hass.states.get("calendar.samsas_week")
     assert calendar.attributes["message"] == "🚗 Hämtning Ella – Bo"
@@ -136,7 +139,7 @@ async def test_the_lists_write_back(hass: HomeAssistant, api):
     api["update"].assert_awaited_with(20, text="Dammsuga", done=True, day=TODAY.isoformat())
 
     await hass.services.async_call("todo", "update_item",
-                                   {ATTR_ENTITY_ID: "todo.samsas_long_term", "item": "Måla om hallen", "due_date": "2027-01-15"}, blocking=True)
+                                   {ATTR_ENTITY_ID: "todo.samsas_to_do", "item": "Måla om hallen", "due_date": "2027-01-15"}, blocking=True)
     api["update"].assert_awaited_with(21, text="Måla om hallen", done=False, due="2027-01-15")
 
     await hass.services.async_call("todo", "remove_item", {ATTR_ENTITY_ID: "todo.samsas_shopping_list", "item": "Smör"}, blocking=True)
@@ -152,7 +155,7 @@ async def test_calendar_asks_by_range_and_lists_the_notices_as_whole_days(hass: 
     api["events"].assert_awaited_once_with(TODAY, TODAY + timedelta(days=7))
     events = result["calendar.samsas_week"]["events"]
     assert [e["summary"] for e in events] == ["🎒 Lämning Ella – Alva", "🚗 Hämtning Ella – Bo", "⚽ Kalas – ingen än",
-                                              "Sophämtning: Restavfall", "⛷️ Fjällen – Alva och Bo"]
+                                              "🗑️ Sophämtning: Restavfall", "⛷️ Fjällen – Alva och Bo"]
     assert events[2]["start"] == (TODAY + timedelta(days=1)).isoformat()      # whole day: a date, not a time
 
 
@@ -240,3 +243,64 @@ async def test_import_recipe_service(hass: HomeAssistant, api):
     api["import"].side_effect = SamsasError("Att importera recept ingår i Samsas Plus", 402)
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(DOMAIN, "import_recipe", {"text": "Pannkakor"}, blocking=True)
+
+
+# --- 0.3: Egna listor, deadlines, the weeks a child is here -----------------------
+
+async def test_the_households_own_lists_are_to_do_lists(hass: HomeAssistant, api):
+    entry = await setup_entry(hass)
+    packing = hass.states.get("todo.samsas_packlista")
+    assert packing.state == "1" and packing.attributes["friendly_name"] == "Samsas Packlista"
+
+    await hass.services.async_call("todo", "add_item", {"item": "Laddare", "due_date": "2027-01-10"},
+                                   target={ATTR_ENTITY_ID: "todo.samsas_packlista"}, blocking=True)
+    api["add_custom"].assert_awaited_once_with(5, "Laddare", due="2027-01-10")
+    await hass.services.async_call("todo", "update_item", {"item": "Pass", "status": "completed"},
+                                   target={ATTR_ENTITY_ID: "todo.samsas_packlista"}, blocking=True)
+    assert api["update"].call_args.args == (30,) and api["update"].call_args.kwargs["done"] is True
+
+    # a list made in the app shows up; one renamed keeps its entity; one deleted goes unavailable
+    payload = state_payload()
+    payload["custom_lists"][0]["name"] = "Packlista fjällen"
+    payload["custom_lists"].append({"id": 6, "name": "Byggvaruhuset", "emoji": "🔨", "items": []})
+    api["state"].return_value = payload
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get("todo.samsas_packlista").attributes["friendly_name"] == "Samsas Packlista fjällen"
+    assert hass.states.get("todo.samsas_byggvaruhuset").state == "0"
+    payload["custom_lists"] = payload["custom_lists"][1:]
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get("todo.samsas_packlista").state == "unavailable"
+
+
+async def test_a_shopping_row_says_which_dishes_it_is_for(hass: HomeAssistant, api):
+    await setup_entry(hass)
+    result = await hass.services.async_call("todo", "get_items", {}, target={ATTR_ENTITY_ID: "todo.samsas_shopping_list"},
+                                            blocking=True, return_response=True)
+    items = {i["summary"]: i for i in result["todo.samsas_shopping_list"]["items"]}
+    assert items["Mjölk"]["description"] == "Tacos, Pannkakor" and "description" not in items["Smör"]
+
+
+async def test_the_calendar_has_deadlines_and_the_weeks_a_child_is_here_not_their_away_events(hass: HomeAssistant, api):
+    await setup_entry(hass)
+    payload = state_payload()
+    payload["events"][2]["away"] = True             # Kalas: only Ella's, in the other home's week
+    monday = TODAY - timedelta(days=TODAY.weekday())
+    stay = {"start": monday.isoformat(), "end": (monday + timedelta(days=7)).isoformat()}
+    api["events"].return_value = {
+        "events": payload["events"],
+        "notices": payload["notices"] + [{"day": (TODAY + timedelta(days=3)).isoformat(), "kind": "due", "title": "Pass · Packlista"}],
+        "stays": [{**stay, "kid_id": 3, "name": "Ella", "emoji": "👧"}, {**stay, "kid_id": 4, "name": "Noah", "emoji": "🧒"},
+                  {"start": (monday + timedelta(days=14)).isoformat(), "end": (monday + timedelta(days=21)).isoformat(),
+                   "kid_id": 3, "name": "Ella", "emoji": "👧"}],
+    }
+    result = await hass.services.async_call("calendar", "get_events",
+                                            {"start_date_time": f"{TODAY} 00:00:00", "end_date_time": f"{TODAY + timedelta(days=21)} 00:00:00"},
+                                            target={ATTR_ENTITY_ID: "calendar.samsas_week"}, blocking=True, return_response=True)
+    events = {e["summary"]: e for e in result["calendar.samsas_week"]["events"]}
+    assert "⚽ Kalas – ingen än" not in events
+    assert "📋 Pass · Packlista" in events
+    together = events["🏠 Ella och Noah hos oss"]
+    assert together["start"] == monday.isoformat() and together["end"] == (monday + timedelta(days=7)).isoformat()
+    assert "👧 Ella hos oss" in events

@@ -52,16 +52,22 @@ class SamsasKidEntity(SamsasEntity):
 def add_per_kid(entry: SamsasConfigEntry, async_add_entities: AddEntitiesCallback,
                 make: Callable[[SamsasCoordinator, dict], Iterable[Entity]]) -> None:
     """Entities for each child now, and for a child added in the app later."""
+    add_per_item(entry, async_add_entities, lambda data: data["kids"], make)
+
+
+def add_per_item(entry: SamsasConfigEntry, async_add_entities: AddEntitiesCallback,
+                 items: Callable[[dict], list[dict]], make: Callable[[SamsasCoordinator, dict], Iterable[Entity]]) -> None:
+    """Entities for each of `items` in the state now (by id), and for one added in the app later."""
     coordinator = entry.runtime_data
     known: set[int] = set()
 
     @callback
     def add_new() -> None:
         entities: list[Entity] = []
-        for kid in coordinator.data["kids"]:
-            if kid["id"] not in known:
-                known.add(kid["id"])
-                entities.extend(make(coordinator, kid))
+        for item in items(coordinator.data):
+            if item["id"] not in known:
+                known.add(item["id"])
+                entities.extend(make(coordinator, item))
         if entities:
             async_add_entities(entities)
 
