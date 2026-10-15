@@ -15,6 +15,7 @@ from functools import partial
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, State, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_interval
 
 from .api import SamsasApi, SamsasError
@@ -25,11 +26,24 @@ FULL_SYNC = timedelta(minutes=15)
 NAME_MAX = 60
 
 
-def payload(state: State) -> dict[str, Any]:
+def name_of(hass: HomeAssistant, state: State) -> str:
+    """What the card calls it: the household's own name for it if they renamed it,
+    otherwise the entity's own ("Elpris", not "Tibber Pulse Storgatan 1 Elpris");
+    the full friendly name when that is all there is."""
+    entry = er.async_get(hass).async_get(state.entity_id)
+    if entry is not None:
+        if entry.name:
+            return entry.name
+        if entry.has_entity_name and entry.original_name:
+            return entry.original_name
+    return state.name or state.entity_id
+
+
+def payload(hass: HomeAssistant, state: State) -> dict[str, Any]:
     """One entity as Samsas takes it (/hass/v1/entities)."""
     return {
         "entity_id": state.entity_id,
-        "name": (state.name or state.entity_id)[:NAME_MAX],
+        "name": name_of(hass, state)[:NAME_MAX],
         "state": state.state[:255],
         "unit": state.attributes.get("unit_of_measurement"),
         "device_class": state.attributes.get("device_class"),
@@ -60,7 +74,7 @@ class HouseShare:
     async def _full(self, _now: datetime | None = None) -> None:
         states = [s for e in self.entity_ids if (s := self.hass.states.get(e)) is not None]
         try:
-            await self.api.share_entities([payload(s) for s in states], complete=True)
+            await self.api.share_entities([payload(self.hass, s) for s in states], complete=True)
         except SamsasError as err:
             LOGGER.warning("Could not share the house with Samsas: %s", err)
             return
@@ -90,6 +104,6 @@ class HouseShare:
             return
         self._sent[entity_id] = datetime.now()
         try:
-            await self.api.share_entities([payload(state)])
+            await self.api.share_entities([payload(self.hass, state)])
         except SamsasError as err:
             LOGGER.debug("Samsas did not take %s: %s", entity_id, err)

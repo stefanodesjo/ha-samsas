@@ -361,3 +361,19 @@ async def test_notify_sends_to_the_adults_named(hass: HomeAssistant, api):
     api["notify"].side_effect = SamsasError("för många", 429)
     with pytest.raises(ServiceValidationError, match="30"):
         await hass.services.async_call(DOMAIN, "notify", {"message": "x"}, blocking=True)
+
+
+async def test_the_card_gets_the_entitys_own_name_or_the_households(hass: HomeAssistant, api):
+    from homeassistant.helpers import entity_registry as er
+    registry = er.async_get(hass)
+    price = registry.async_get_or_create("sensor", "tibber", "price", suggested_object_id="storgatan_1_elpris",
+                                         has_entity_name=True, original_name="Elpris")
+    renamed = registry.async_get_or_create("sensor", "tibber", "power", suggested_object_id="storgatan_1_effekt",
+                                           has_entity_name=True, original_name="Effekt")
+    registry.async_update_entity(renamed.entity_id, name="Huset drar")
+    hass.states.async_set(price.entity_id, "2.669", {"friendly_name": "Tibber Pulse Storgatan 1 Elpris", "unit_of_measurement": "SEK/kWh"})
+    hass.states.async_set(renamed.entity_id, "1200", {"friendly_name": "Huset drar", "unit_of_measurement": "W"})
+    hass.states.async_set("sensor.utan_register", "5", {"friendly_name": "Gammal mall"})
+    await setup_entry(hass, {"shared_entities": [price.entity_id, renamed.entity_id, "sensor.utan_register"]})
+    entities, = api["share"].await_args.args
+    assert [e["name"] for e in entities] == ["Elpris", "Huset drar", "Gammal mall"]
