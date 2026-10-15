@@ -53,7 +53,20 @@ One device, *Samsas*, with:
 A child added in the app shows up on its own; a child shared from another home
 gets the calendar and *är*, not points or chores, which live in that home.
 
-## Service
+## The house in Samsas
+
+Since 0.4 the house can show up in the app. Under the integration's
+**Configure**, pick the entities the family should see (at most 24, in the
+order they should show): a temperature, a door, the washing machine, the
+electricity price. They appear on the **Huset** card on Hem in Samsas, with
+how long each value has been so, written the app's way ("21,5 °C", "Öppen").
+
+A value is sent when it changes, at most once a minute per entity, and the
+whole set every 15 minutes; if Samsas hears nothing for 45 minutes the card
+says so. Only the current value is sent, never a history. Pick none to
+remove the card.
+
+## Services
 
 `samsas.import_recipe` reads a recipe from a link (or a text) and puts it in
 the cookbook, like *Dela till Samsas* in the app. It is part of Samsas Plus.
@@ -66,6 +79,19 @@ data:
   url: https://www.ica.se/recept/kanelbullar-712345/
   member: Alva
 response_variable: saved      # {title, kind: recipe | other, where: Kokboken | Att göra}
+```
+
+`samsas.notify` sends the adults a notification through Samsas, in your own
+words, so it reaches the whole family even without Home Assistant on their
+phones. It is part of Samsas Plus, at most 30 a day. `to` names the adults
+(all of them otherwise); `title` defaults to 🏠 Huset.
+
+```yaml
+action: samsas.notify
+data:
+  message: Tvättmaskinen är klar
+  title: 🧺 Tvätten
+  to: [Alva]
 ```
 
 ## Logo

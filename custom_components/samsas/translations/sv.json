@@ -107,6 +107,28 @@
           "description": "Behövs bara när flera hushåll är kopplade."
         }
       }
+    },
+    "notify": {
+      "name": "Skicka en notis",
+      "description": "Skickar en notis till de vuxna i Samsas, med era egna ord. Ingår i Samsas Plus; högst 30 om dagen.",
+      "fields": {
+        "message": {
+          "name": "Meddelande",
+          "description": "Det notisen säger, t.ex. \"Tvättmaskinen är klar\"."
+        },
+        "title": {
+          "name": "Rubrik",
+          "description": "Ovanför meddelandet. Utan: 🏠 Huset."
+        },
+        "to": {
+          "name": "Till",
+          "description": "De vuxna med namn. Utan namn: alla."
+        },
+        "config_entry_id": {
+          "name": "Hushåll",
+          "description": "Behövs bara när flera hushåll är kopplade."
+        }
+      }
     }
   },
   "exceptions": {
@@ -118,6 +140,26 @@
     },
     "which_household": {
       "message": "Ange vilket hushåll: flera är kopplade, eller inget är laddat."
+    },
+    "notify_needs_plus": {
+      "message": "Notiser från Home Assistant ingår i Samsas Plus."
+    },
+    "too_many_notifications": {
+      "message": "Samsas tar emot högst 30 notiser om dagen från Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Dela med Samsas",
+        "description": "Välj värdena familjen ser på kortet Huset på Hem i Samsas, högst {max}, i den ordning de ska visas. Bara det nuvarande värdet skickas, aldrig någon historik. Välj inga för att ta bort kortet.",
+        "data": {
+          "shared_entities": "Entiteter"
+        }
+      }
+    },
+    "error": {
+      "too_many": "Högst {max} entiteter"
     }
   }
 }

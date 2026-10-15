@@ -20,6 +20,7 @@ class SamsasCoordinator(DataUpdateCoordinator[dict]):
     def __init__(self, hass: HomeAssistant, entry: SamsasConfigEntry, api: SamsasApi) -> None:
         super().__init__(hass, LOGGER, config_entry=entry, name=DOMAIN, update_interval=UPDATE_INTERVAL)
         self.api = api
+        self.share = None           # the house's entities going to Samsas (share.py), once picked
 
     async def _async_update_data(self) -> dict:
         try:

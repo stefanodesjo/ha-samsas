@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.samsas.api import SamsasAuthError, SamsasError
 from custom_components.samsas.const import DOMAIN
@@ -69,15 +69,18 @@ def api():
          patch("custom_components.samsas.api.SamsasApi.update_item", new_callable=AsyncMock, return_value={"ok": True}) as update, \
          patch("custom_components.samsas.api.SamsasApi.delete_item", new_callable=AsyncMock, return_value={"ok": True}) as delete, \
          patch("custom_components.samsas.api.SamsasApi.import_recipe", new_callable=AsyncMock,
-               return_value={"kind": "recipe", "id": 5, "title": "Kanelbullar", "where": "Kokboken"}) as import_recipe:
+               return_value={"kind": "recipe", "id": 5, "title": "Kanelbullar", "where": "Kokboken"}) as import_recipe, \
+         patch("custom_components.samsas.api.SamsasApi.share_entities", new_callable=AsyncMock, return_value={"shared": 2}) as share, \
+         patch("custom_components.samsas.api.SamsasApi.notify", new_callable=AsyncMock, return_value={"to": 2, "left_today": 29}) as notify:
         payload = state_payload()
         events.return_value = {"events": payload["events"], "notices": payload["notices"]}
-        yield {"state": state, "events": events, "add": add, "add_custom": add_custom, "update": update, "delete": delete, "import": import_recipe}
+        yield {"state": state, "events": events, "add": add, "add_custom": add_custom, "update": update, "delete": delete, "import": import_recipe,
+               "share": share, "notify": notify}
 
 
-async def setup_entry(hass: HomeAssistant) -> MockConfigEntry:
+async def setup_entry(hass: HomeAssistant, options: dict | None = None) -> MockConfigEntry:
     entry = MockConfigEntry(domain=DOMAIN, title="Samsas", unique_id="7",
-                            data={"url": "https://samsas.test", "token": "secret"})
+                            data={"url": "https://samsas.test", "token": "secret"}, options=options or {})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -304,3 +307,57 @@ async def test_the_calendar_has_deadlines_and_the_weeks_a_child_is_here_not_thei
     together = events["🏠 Ella och Noah hos oss"]
     assert together["start"] == monday.isoformat() and together["end"] == (monday + timedelta(days=7)).isoformat()
     assert "👧 Ella hos oss" in events
+
+
+async def test_nothing_is_shared_until_entities_are_picked(hass: HomeAssistant, api):
+    await setup_entry(hass)
+    api["share"].assert_not_awaited()
+
+
+async def test_the_options_pick_what_samsas_shows_and_reload(hass: HomeAssistant, api):
+    hass.states.async_set("sensor.vardagsrum", "21.5", {"friendly_name": "Vardagsrummet", "unit_of_measurement": "°C", "device_class": "temperature"})
+    entry = await setup_entry(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "form" and result["step_id"] == "init"
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"shared_entities": ["sensor.vardagsrum"]})
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert entry.options == {"shared_entities": ["sensor.vardagsrum"]}
+    entities, = api["share"].await_args.args
+    assert api["share"].await_args.kwargs == {"complete": True}
+    assert entities == [{"entity_id": "sensor.vardagsrum", "name": "Vardagsrummet", "state": "21.5", "unit": "°C",
+                         "device_class": "temperature", "changed_at": hass.states.get("sensor.vardagsrum").last_changed.isoformat()}]
+
+
+async def test_a_change_goes_at_most_once_a_minute_with_the_newest_value(hass: HomeAssistant, api, freezer):
+    hass.states.async_set("binary_sensor.altandorr", "off", {"friendly_name": "Altandörren", "device_class": "door"})
+    hass.states.async_set("sensor.saknas_inte", "1")
+    await setup_entry(hass, {"shared_entities": ["binary_sensor.altandorr", "sensor.borta"]})
+    entities, = api["share"].await_args.args
+    assert [e["entity_id"] for e in entities] == ["binary_sensor.altandorr"]       # one that does not exist is left out
+    api["share"].reset_mock()
+    hass.states.async_set("binary_sensor.altandorr", "on", {"friendly_name": "Altandörren", "device_class": "door"})
+    hass.states.async_set("binary_sensor.altandorr", "off", {"friendly_name": "Altandörren", "device_class": "door"})
+    await hass.async_block_till_done()
+    api["share"].assert_not_awaited()           # sent a moment ago with the full set: wait
+    freezer.tick(timedelta(seconds=61))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    entities, = api["share"].await_args.args
+    assert api["share"].await_count == 1 and entities[0]["state"] == "off" and api["share"].await_args.kwargs == {}
+
+
+async def test_notify_sends_to_the_adults_named(hass: HomeAssistant, api):
+    await setup_entry(hass)
+    await hass.services.async_call(DOMAIN, "notify", {"message": "Tvättmaskinen är klar"}, blocking=True)
+    api["notify"].assert_awaited_with("Tvättmaskinen är klar", None, None)
+    await hass.services.async_call(DOMAIN, "notify", {"message": "Hämta paketet", "title": "📦", "to": ["bo"]}, blocking=True)
+    api["notify"].assert_awaited_with("Hämta paketet", "📦", [2])
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(DOMAIN, "notify", {"message": "x", "to": ["Ingen"]}, blocking=True)
+    api["notify"].side_effect = SamsasError("Plus", 402)
+    with pytest.raises(ServiceValidationError, match="Samsas Plus"):
+        await hass.services.async_call(DOMAIN, "notify", {"message": "x"}, blocking=True)
+    api["notify"].side_effect = SamsasError("för många", 429)
+    with pytest.raises(ServiceValidationError, match="30"):
+        await hass.services.async_call(DOMAIN, "notify", {"message": "x"}, blocking=True)

@@ -20,7 +20,15 @@ PICKUP_KINDS = ("hamta", "lamna")
 # An event with a start and no end: half an hour is about a pickup.
 TIMED_MINUTES = 30
 
+# Options: the entities shared with Samsas, for Hem's Huset card (share.py)
+CONF_SHARED = "shared_entities"
+MAX_SHARED = 24
+
 SERVICE_IMPORT_RECIPE = "import_recipe"
+SERVICE_NOTIFY = "notify"
+ATTR_MESSAGE = "message"
+ATTR_TITLE = "title"
+ATTR_TO = "to"
 ATTR_URL = "url"
 ATTR_TEXT = "text"
 ATTR_MEMBER = "member"

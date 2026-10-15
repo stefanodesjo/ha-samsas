@@ -107,6 +107,28 @@
           "description": "Only needed when more than one household is set up."
         }
       }
+    },
+    "notify": {
+      "name": "Send a notification",
+      "description": "Sends a notification to the adults in Samsas, in your own words. Part of Samsas Plus; at most 30 a day.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "What the notification says, e.g. \"The washing machine is done\"."
+        },
+        "title": {
+          "name": "Title",
+          "description": "Above the message. Without one: 🏠 The house."
+        },
+        "to": {
+          "name": "To",
+          "description": "The adults by name. Without names: all of them."
+        },
+        "config_entry_id": {
+          "name": "Household",
+          "description": "Only needed when more than one household is set up."
+        }
+      }
     }
   },
   "exceptions": {
@@ -118,6 +140,26 @@
     },
     "which_household": {
       "message": "Name the household: several are set up, or none is loaded."
+    },
+    "notify_needs_plus": {
+      "message": "Notifications from Home Assistant are part of Samsas Plus."
+    },
+    "too_many_notifications": {
+      "message": "Samsas takes at most 30 notifications a day from Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Share with Samsas",
+        "description": "Pick the values the family sees on the House card on Home in Samsas, at most {max}, in the order they should show. Only the current value is sent, never a history. Pick none to remove the card.",
+        "data": {
+          "shared_entities": "Entities"
+        }
+      }
+    },
+    "error": {
+      "too_many": "At most {max} entities"
     }
   }
 }

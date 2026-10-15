@@ -68,3 +68,11 @@ class SamsasApi:
 
     async def delete_item(self, item_id: int) -> dict:
         return await self._request("DELETE", f"/items/{item_id}")
+
+    async def share_entities(self, entities: list[dict], complete: bool = False) -> dict:
+        """The house's values for the Huset card; `complete` is the whole set, in order."""
+        return await self._request("POST", "/entities", json={"entities": entities, "complete": complete})
+
+    async def notify(self, message: str, title: str | None = None, members: list[int] | None = None) -> dict:
+        """A push to the adults (Samsas Plus), in the household's own words."""
+        return await self._request("POST", "/notify", json={"message": message, "title": title, "members": members})

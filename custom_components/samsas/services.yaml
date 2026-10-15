@@ -17,3 +17,23 @@ import_recipe:
       selector:
         config_entry:
           integration: samsas
+notify:
+  fields:
+    message:
+      required: true
+      example: "Tvättmaskinen är klar"
+      selector:
+        text:
+    title:
+      example: "🧺 Tvätten"
+      selector:
+        text:
+    to:
+      example: "Alva"
+      selector:
+        text:
+          multiple: true
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: samsas
