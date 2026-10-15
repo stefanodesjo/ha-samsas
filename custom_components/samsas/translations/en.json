@@ -152,7 +152,7 @@
     "step": {
       "init": {
         "title": "Share with Samsas",
-        "description": "Pick the values the family sees on the House card on Home in Samsas, at most {max}, in the order they should show. Only the current value is sent, never a history. Pick none to remove the card.",
+        "description": "Pick the values the family sees on the House card on Home in Samsas, at most {max}, in the order they should show. Only the current value is sent, never a history. Pick none to remove the card. Without Samsas Plus the card shows the first two.",
         "data": {
           "shared_entities": "Entities"
         }

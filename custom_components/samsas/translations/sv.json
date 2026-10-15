@@ -152,7 +152,7 @@
     "step": {
       "init": {
         "title": "Dela med Samsas",
-        "description": "Välj värdena familjen ser på kortet Huset på Hem i Samsas, högst {max}, i den ordning de ska visas. Bara det nuvarande värdet skickas, aldrig någon historik. Välj inga för att ta bort kortet.",
+        "description": "Välj värdena familjen ser på kortet Huset på Hem i Samsas, högst {max}, i den ordning de ska visas. Bara det nuvarande värdet skickas, aldrig någon historik. Välj inga för att ta bort kortet. Utan Samsas Plus visar kortet de två första.",
         "data": {
           "shared_entities": "Entiteter"
         }

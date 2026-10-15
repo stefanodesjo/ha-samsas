@@ -377,3 +377,17 @@ async def test_the_card_gets_the_entitys_own_name_or_the_households(hass: HomeAs
     await setup_entry(hass, {"shared_entities": [price.entity_id, renamed.entity_id, "sensor.utan_register"]})
     entities, = api["share"].await_args.args
     assert [e["name"] for e in entities] == ["Elpris", "Huset drar", "Gammal mall"]
+
+
+async def test_without_plus_home_assistant_says_how_many_samsas_shows(hass: HomeAssistant, api):
+    for i in range(3):
+        hass.states.async_set(f"sensor.s{i}", str(i))
+    api["share"].return_value = {"shared": 2, "limit": 2, "hidden": 1}
+    with patch("custom_components.samsas.share.persistent_notification.async_create") as create, \
+         patch("custom_components.samsas.share.persistent_notification.async_dismiss") as dismiss:
+        entry = await setup_entry(hass, {"shared_entities": ["sensor.s0", "sensor.s1", "sensor.s2"]})
+        assert create.call_count == 1 and "2 of 3" in create.call_args.args[1]
+        # with Plus (or fewer picked), it goes away at the next full sync
+        api["share"].return_value = {"shared": 3, "limit": 24, "hidden": 0}
+        await entry.runtime_data.share._full()
+        dismiss.assert_called_once()

@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from typing import Any
 
+from homeassistant.components import persistent_notification
 from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_interval
@@ -21,6 +22,7 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 from .api import SamsasApi, SamsasError
 from .const import LOGGER
 
+NOTICE_ID = "samsas_house_plus"
 SEND_EVERY = timedelta(minutes=1)       # per entity, at most
 FULL_SYNC = timedelta(minutes=15)
 NAME_MAX = 60
@@ -74,13 +76,28 @@ class HouseShare:
     async def _full(self, _now: datetime | None = None) -> None:
         states = [s for e in self.entity_ids if (s := self.hass.states.get(e)) is not None]
         try:
-            await self.api.share_entities([payload(self.hass, s) for s in states], complete=True)
+            answer = await self.api.share_entities([payload(self.hass, s) for s in states], complete=True)
         except SamsasError as err:
             LOGGER.warning("Could not share the house with Samsas: %s", err)
             return
+        self._tell_about_plus(answer)
         now = datetime.now()
         for s in states:
             self._sent[s.entity_id] = now
+
+    @callback
+    def _tell_about_plus(self, answer: dict) -> None:
+        """Without Samsas Plus the card shows the first two picked: say so here,
+        where they were picked, until it no longer applies."""
+        hidden, limit = answer.get("hidden", 0), answer.get("limit")
+        if not hidden:
+            persistent_notification.async_dismiss(self.hass, NOTICE_ID)
+            return
+        swedish = (self.hass.config.language or "").startswith("sv")
+        message = (f"Samsas visar {limit} av {limit + hidden} värden på kortet Huset. Resten visas med Samsas Plus, som ni skaffar i appen."
+                   if swedish else
+                   f"Samsas shows {limit} of {limit + hidden} values on the House card. The rest show with Samsas Plus, which you get in the app.")
+        persistent_notification.async_create(self.hass, message, title="Samsas", notification_id=NOTICE_ID)
 
     @callback
     def _changed(self, event: Event[EventStateChangedData]) -> None:

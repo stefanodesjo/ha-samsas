@@ -56,15 +56,16 @@ gets the calendar and *är*, not points or chores, which live in that home.
 ## The house in Samsas
 
 Since 0.4 the house can show up in the app. Under the integration's
-**Configure**, pick the entities the family should see (at most 24, in the
-order they should show): a temperature, a door, the washing machine, the
+**Configure**, pick the entities the family should see (in the order they
+should show; the first two without Samsas Plus, up to 24 with it): a temperature, a door, the washing machine, the
 electricity price. They appear on the **Huset** card on Hem in Samsas, with
 how long each value has been so, written the app's way ("21,5 °C", "Öppen").
 
 A value is sent when it changes, at most once a minute per entity, and the
 whole set every 15 minutes; if Samsas hears nothing for 45 minutes the card
 says so. Only the current value is sent, never a history. Pick none to
-remove the card.
+remove the card. Without Plus, Home Assistant shows a notification saying how many of the
+picked values the card leaves out; it goes away with Plus or fewer picked.
 
 ## Services
 
