@@ -19,7 +19,7 @@ and restart.
 
 Then **Settings → Devices & services → Add integration → Samsas**. It asks for
 the app's address (`https://samsas.app`) and a token. The token is in the app
-under **Hem → Hemmet → Home Assistant**, where it can also be rotated; a
+under **Vi → Home Assistant**, where it can also be rotated; a
 rotated token makes Home Assistant ask for the new one.
 
 What the token reaches is narrow on purpose: the week, the dinner, the lists,
